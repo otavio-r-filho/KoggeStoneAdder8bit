@@ -1,10 +1,13 @@
 // 8 bit Kogge-Stone adder with carry in and carry out
-// Still missing the synchronization logic
+// Creating wire intead of buses to make the design more simple. 
+// All the wires will be replaced by buses for each level.
+// Eg: wire [7:0] PBus0 - meaning propagate bus level 0
 
 module KoggeStoneAdder8bit(clk, rst, A, B, Ci, S, Co);
   input clk, rst, Ci;
   input [7:0] A, B;
-  output [7:0] S, Co;
+  output [7:0] S;
+  output Co;
   
   reg [7:0] S;
   reg Co;
@@ -25,6 +28,10 @@ module KoggeStoneAdder8bit(clk, rst, A, B, Ci, S, Co);
   //Layer 3 of wires
   wire P37;
   wire G33, G34, G35, G36;
+  
+  //Sum wires
+  wire [7:0] ws;
+  wire wCo;
   
   //Layer 0
   EntryBox E0(.Ai(A[0]), .Bi(B[0]), .Pi(P00), .Gi(G00));
@@ -63,6 +70,26 @@ module KoggeStoneAdder8bit(clk, rst, A, B, Ci, S, Co);
   PropagateBox PB37 (.Pi(P27), .Gi(G27), .Pki(P23), .Gki(G23), .P(P37), .G(G37));
   
   //Carry out logic
-  GenerateBox  GB47 (.Pi(P37), .Gi(G37), .Gki(Ci), .G(Co)); 
+  GenerateBox  GB47 (.Pi(P37), .Gi(G37), .Gki(Ci), .G(wCo)); 
+  
+  //Sum logic
+  SumBlock S0(.Pi(P00), .Gki(Ci),  .Si(ws[0]));
+  SumBlock S1(.Pi(P01), .Gki(G10), .Si(ws[1]));
+  SumBlock S2(.Pi(P02), .Gki(G21), .Si(ws[2]));
+  SumBlock S3(.Pi(P03), .Gki(G22), .Si(ws[3]));
+  SumBlock S4(.Pi(P04), .Gki(G33), .Si(ws[4]));
+  SumBlock S5(.Pi(P05), .Gki(G34), .Si(ws[5]));
+  SumBlock S6(.Pi(P06), .Gki(G35), .Si(ws[6]));
+  SumBlock S7(.Pi(P07), .Gki(G36), .Si(ws[7]));
+  
+  always @(posedge clk) begin
+	if(rst) begin
+		S[7:0] <= 1'b0;
+		Co <= 1'b0;
+	end else begin
+		S[7:0] <= ws[7:0];
+		Co <= wCo;
+	end
+  end
       
 endmodule
